@@ -21,13 +21,13 @@ def preprocess_data_sep_by_heading():
 class Data:
     PATH = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
 
-    def __init__(self, validation_split, image_size, batch_size, seed):
+    def __init__(self, validation_split: float, image_size: tuple[int, int], batch_size: int, seed: int):
         self.val_split = validation_split
         self.image_size = image_size
         self.batch_size = batch_size
         self.seed = seed
 
-    def load_train(self, name, path=PATH):
+    def load_train(self, name: str, path=PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,
@@ -37,7 +37,7 @@ class Data:
             image_size=self.image_size,
             batch_size=self.batch_size)
 
-    def load_test(self, name, path=PATH):
+    def load_test(self, name: str, path=PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,

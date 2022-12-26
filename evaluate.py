@@ -1,9 +1,10 @@
+import contextlib
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras.layers import Dense, Flatten, Average
 from tqdm import tqdm
-from models import Models
+from models import RESNET50
 
 gpus = tf.config.list_physical_devices('GPU')
 # if gpus:
@@ -16,35 +17,18 @@ gpus = tf.config.list_physical_devices('GPU')
 #         # Visible devices must be set before GPUs have been initialized
 #         print(e)
 
-path = '/home/turib/test/'
+path = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/only_resnet50/'
 
 
-def create_model():
-    resnet_model = keras.Sequential()
+model1 = RESNET50()
+model2 = RESNET50()
+model3 = RESNET50()
+model4 = RESNET50()
 
-    pretrained_model = keras.applications.ResNet50(include_top=False,
-                                                   input_shape=(256, 256, 3),
-                                                   pooling='avg', classes=50,
-                                                   weights='imagenet')
-    for layer in pretrained_model.layers:
-        layer.trainable = False
-
-    resnet_model.add(pretrained_model)
-    resnet_model.add(Flatten())
-    resnet_model.add(Dense(512, activation='relu'))
-    resnet_model.add(Dense(50, activation='softmax'))
-    return resnet_model
-
-
-model1 = Models().RESNET50()
-model2 = Models().RESNET50()
-model3 = Models().RESNET50()
-model4 = Models().RESNET50()
-
-model1.load_weights(f'{path}weights/0.12-2.63.hdf5')
-model2.load_weights(f'{path}weights/90.06-2.76.hdf5')
-model3.load_weights(f'{path}weights/180.06-2.71.hdf5')
-model4.load_weights(f'{path}weights/270.08-2.69.hdf5')
+model1.load_weights(f'{path}0.06-1.48.hdf5')
+model2.load_weights(f'{path}90.06-1.54.hdf5')
+model3.load_weights(f'{path}180.06-1.54.hdf5')
+model4.load_weights(f'{path}270.04-2.02.hdf5')
 
 models = [model1, model2, model3, model4]
 model_input = keras.Input(shape=(256, 256, 3))
@@ -54,12 +38,17 @@ ensemble_model = keras.Model(inputs=model_input, outputs=ensemble_output, name='
 
 
 def get_data():
+    p = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
     x_test, y_test = [], []
     test_ds = keras.preprocessing.image_dataset_from_directory(
-        f'{path}test_data',
+        f'{p}test_data',
         label_mode='categorical',
         image_size=(256, 256),
-        batch_size=64)
+        validation_split=0.002,
+        seed=123,
+        shuffle=True,
+        subset='validation',
+        batch_size=8)
     for images, labels in tqdm(test_ds.unbatch()):
         x_test.append(images.numpy())
         y_test.append(labels.numpy())
@@ -70,22 +59,21 @@ x_test, y_test = get_data()
 x_test = x_test.reshape(-1, 256, 256, 3)
 
 
-def accuracy(model):
-    pred = [model.predict(x_test[i: i + 100], batch_size=8) for i in tqdm(range(0, len(x_test) - 100, 100))]
-
-    # try1 = np.sum(np.not_equal(pred, actual_label)) / y_test.shape[0]
-    # try2 = np.sum(np.equal(pred, actual_label)) / y_test.shape[0]
-    top3_acc = 0
-    top5_acc = 0
-    try:
-        top3_acc = sum(np.argmax(y_test[i]) in np.argpartition(pred[i], -3)[-3:] for i in range(y_test.shape[0])) / \
-                   y_test.shape[0]
-        top5_acc = sum(np.argmax(y_test[i]) in np.argpartition(pred[i], -5)[-5:] for i in range(y_test.shape[0])) / \
-                   y_test.shape[0]
-    except Exception:
-        pass
-    return sum(np.argmax(pred[i]) == np.argmax(y_test[i]) for i in range(y_test.shape[0])) / y_test.shape[
-        0], top3_acc, top5_acc
+def topk_accuracy(model, list_k: list, patch_size=100):
+    pred = []
+    for i in tqdm(range(0, len(x_test) - patch_size, patch_size)):
+        pred.extend(model.predict(x_test[i: i + patch_size], batch_size=8))
+    pred.extend(model.predict(x_test[len(x_test) - patch_size:], batch_size=8))
+    pred = np.array(pred)
+    return {k: sum(np.argmax(y_test[i]) in np.argpartition(pred[i], -k)[-k:] for i in range(pred.shape[0])) / pred.shape[0] for k in list_k}
 
 
-print(f"Ensemble model acc: {accuracy(ensemble_model)}")
+accuracies = topk_accuracy(ensemble_model, [1, 3, 5])
+
+
+def print_accuracy(accuracies, model_name):
+    print(f"{model_name} model accuracy:")
+    for k, acc in accuracies.items():
+        print(f'Top {k}: {acc}')
+
+print_accuracy(accuracies, 'RESNET50 ensemble')
