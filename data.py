@@ -1,6 +1,7 @@
 from tensorflow import keras
 from pathlib import Path
 from tqdm import tqdm
+import numpy as np
 
 
 def preprocess_data_sep_by_heading():
@@ -37,7 +38,7 @@ class Data:
             image_size=self.image_size,
             batch_size=self.batch_size)
 
-    def load_test(self, name: str, path=PATH):
+    def load_val(self, name: str, path=PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,
@@ -46,3 +47,20 @@ class Data:
             label_mode='categorical',
             image_size=self.image_size,
             batch_size=self.batch_size)
+
+    def load_test(self) -> tuple[np.array, np.array]:
+        p = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
+        x_test, y_test = [], []
+        test_ds = keras.preprocessing.image_dataset_from_directory(
+            f'{p}test_data',
+            label_mode='categorical',
+            image_size=self.image_size,
+            validation_split=self.val_split,
+            seed=self.seed,
+            shuffle=True,
+            subset='validation',
+            batch_size=self.batch_size)
+        for images, labels in tqdm(test_ds.unbatch()):
+            x_test.append(images.numpy())
+            y_test.append(labels.numpy())
+        return np.array(x_test), np.array(y_test)

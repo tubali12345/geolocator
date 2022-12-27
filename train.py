@@ -1,7 +1,4 @@
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping, ReduceLROnPlateau
-from tensorflow import keras
-from tensorflow.python.keras.layers import Dense, Flatten, Average
-import numpy as np
 from keras.optimizers import SGD
 from pathlib import Path
 from datetime import date
@@ -18,9 +15,9 @@ def callbacks(filepath: str, model_type: str) -> list:
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_weights_only=True,
                                  save_best_only=True, mode='auto')
     tensor_board = TensorBoard(log_dir=logdir)
-    early_stop = EarlyStopping(monitor='val_accuracy', patience=2)
+    early_stop = EarlyStopping(monitor='val_accuracy', patience=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
-                                  patience=3, min_lr=0.0005)
+                                  patience=4, min_lr=0.0005)
     return [checkpoint, tensor_board, early_stop, reduce_lr]
 
 
@@ -35,24 +32,16 @@ def train(model, train_data: tf.data.Dataset, val_data: tf.data.Dataset, num_epo
     return model.fit(train_data,  validation_data=val_data, epochs=num_epochs, callbacks=callbacks(filepath, model_name))
 
 
-def train_ensemble(create_model_func, model_name: str, num_epochs=50):
-    # model1 = create_model_func()
-    # model2 = create_model_func()
-    # model3 = create_model_func()
-    # model4 = create_model_func()
-
+def train_ensemble(create_model_func, model_name: str, num_epochs=50) -> dict:
     models = {heading: create_model_func() for heading in [0, 90, 180, 270]}
-
-    # models = {0: model1, 90: model2, 180: model3, 270: model4}
     histories = {}
 
     for heading, model in models.items():
-        if heading == 270:
-            compile_SGD(model)
-            data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123)
-            train_data = data.load_train(f'pictures_{heading}')
-            val_data = data.load_test(f'pictures_{heading}')
-            histories[heading] = train(model, train_data, val_data, num_epochs, heading, model_name)
+        compile_SGD(model)
+        data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123)
+        train_data = data.load_train(f'pictures_{heading}')
+        val_data = data.load_val(f'pictures_{heading}')
+        histories[heading] = train(model, train_data, val_data, num_epochs, heading, model_name)
     return histories
 
 
