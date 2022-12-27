@@ -5,15 +5,26 @@ from models import RESNET50, ensemble_model
 from data import Data
 
 
-def topk_accuracy(model, list_k: list[int], patch_size=100) -> dict[int: float]:
+def predict(model, x_test, patch_size=100) -> np.array:
     pred = []
     for i in tqdm(range(0, len(x_test) - patch_size, patch_size)):
         pred.extend(model.predict(x_test[i: i + patch_size], batch_size=8))
     pred.extend(model.predict(x_test[len(x_test) - patch_size:], batch_size=8))
-    pred = np.array(pred)
+    return np.array(pred)
+
+
+def topk_accuracy(pred: np.array, test_label: np.array, list_k: list[int]) -> dict[int: float]:
     return {
-        k: sum(np.argmax(y_test[i]) in np.argpartition(pred[i], -k)[-k:] for i in range(pred.shape[0])) / pred.shape[0]
+        k: sum(np.argmax(test_label[i]) in np.argpartition(pred[i], -k)[-k:] for i in range(pred.shape[0])) /
+           pred.shape[0]
         for k in list_k}
+
+
+def accuracy_by_state(pred: np.array, test_label: np.array, k=1) -> dict[int: float]:
+    assert pred.shape[0] == test_label.shape[0]
+    return {
+        state: sum(np.argmax(test_label[i]) in np.argpartition(pred[i], -k)[-k:] if np.argmax(test_label[i]) == state else 0 for i in
+               range(pred.shape[0])) / sum(np.argmax(test_label[i]) == state for i in range(test_label.shape[0])) for state in range(50)}
 
 
 def print_accuracy(accuracies: dict[int: float], model_name: str) -> None:
@@ -41,7 +52,9 @@ if __name__ == '__main__':
     w_dir0 = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/only_resnet50/'
     resnet50_model = RESNET50()
     resnet50_model.load_weights(f'{w_dir0}0.06-1.48.hdf5')
-    accuracies0 = topk_accuracy(resnet50_model, [1, 3, 5])
+    predictions0 = predict(resnet50_model, x_test)
+    accuracies0 = topk_accuracy(predictions0, y_test, [1, 3, 5])
+    print_accuracy(accuracy_by_state(predictions0, y_test), 'Acc by state')
     print_accuracy(accuracies0, 'RESNET50 model')
 
     ''' RESNET 50 ENSEMBLE model'''
@@ -51,5 +64,6 @@ if __name__ == '__main__':
                270: f'{w_dir}270.04-2.02.hdf5'}
 
     ensemble_model = ensemble_model(RESNET50, w_paths)
-    accuracies = topk_accuracy(ensemble_model, [1, 3, 5])
+    predictions = predict(ensemble_model, x_test)
+    accuracies = topk_accuracy(predictions, y_test, [1, 3, 5])
     print_accuracy(accuracies, 'RESNET50 ensemble model')
