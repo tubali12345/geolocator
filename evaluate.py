@@ -1,43 +1,23 @@
-import contextlib
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.python.keras.layers import Dense, Flatten, Average
+from tensorflow.python.keras.layers import Average
 from tqdm import tqdm
 from models import RESNET50
 
-gpus = tf.config.list_physical_devices('GPU')
-# if gpus:
-#     # Restrict TensorFlow to only use the first GPU
-#     try:
-#         tf.config.set_visible_devices(gpus[2], 'GPU')
-#         logical_gpus = tf.config.list_logical_devices('GPU')
-#         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
-#     except RuntimeError as e:
-#         # Visible devices must be set before GPUs have been initialized
-#         print(e)
 
-path = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/only_resnet50/'
+def create_ensemble_model(model, weight_paths: dict):
+    def_models = {heading: model() for heading in [0, 90, 180, 270]}
+    for heading in def_models:
+        def_models[heading].load_weights(weight_paths[heading])
+    models = list(def_models.values())
+    model_input = keras.Input(shape=(256, 256, 3))
+    model_outputs = [model(model_input) for model in models]
+    ensemble_output = Average()(model_outputs)
+    return keras.Model(inputs=model_input, outputs=ensemble_output, name='ensemble')
 
 
-model1 = RESNET50()
-model2 = RESNET50()
-model3 = RESNET50()
-model4 = RESNET50()
-
-model1.load_weights(f'{path}0.06-1.48.hdf5')
-model2.load_weights(f'{path}90.06-1.54.hdf5')
-model3.load_weights(f'{path}180.06-1.54.hdf5')
-model4.load_weights(f'{path}270.04-2.02.hdf5')
-
-models = [model1, model2, model3, model4]
-model_input = keras.Input(shape=(256, 256, 3))
-model_outputs = [model(model_input) for model in models]
-ensemble_output = Average()(model_outputs)
-ensemble_model = keras.Model(inputs=model_input, outputs=ensemble_output, name='ensemble')
-
-
-def get_data():
+def get_test_data():
     p = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
     x_test, y_test = [], []
     test_ds = keras.preprocessing.image_dataset_from_directory(
@@ -55,11 +35,7 @@ def get_data():
     return np.array(x_test), np.array(y_test)
 
 
-x_test, y_test = get_data()
-x_test = x_test.reshape(-1, 256, 256, 3)
-
-
-def topk_accuracy(model, list_k: list, patch_size=100):
+def topk_accuracy(model, list_k: list[int], patch_size=100):
     pred = []
     for i in tqdm(range(0, len(x_test) - patch_size, patch_size)):
         pred.extend(model.predict(x_test[i: i + patch_size], batch_size=8))
@@ -68,12 +44,29 @@ def topk_accuracy(model, list_k: list, patch_size=100):
     return {k: sum(np.argmax(y_test[i]) in np.argpartition(pred[i], -k)[-k:] for i in range(pred.shape[0])) / pred.shape[0] for k in list_k}
 
 
-accuracies = topk_accuracy(ensemble_model, [1, 3, 5])
-
-
 def print_accuracy(accuracies, model_name):
     print(f"{model_name} model accuracy:")
     for k, acc in accuracies.items():
         print(f'Top {k}: {acc}')
 
-print_accuracy(accuracies, 'RESNET50 ensemble')
+
+if __name__ == '__main__':
+    gpus = tf.config.list_physical_devices('GPU')
+    # if gpus:
+    #     # Restrict TensorFlow to only use the first GPU
+    #     try:
+    #         tf.config.set_visible_devices(gpus[2], 'GPU')
+    #         logical_gpus = tf.config.list_logical_devices('GPU')
+    #         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+    #     except RuntimeError as e:
+    #         # Visible devices must be set before GPUs have been initialized
+    #         print(e)
+
+    x_test, y_test = get_test_data()
+
+    w_dir = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/only_resnet50/'
+    w_paths = {0: f'{w_dir}0.06-1.48.hdf5', 90: f'{w_dir}90.06-1.54.hdf5', 180: f'{w_dir}180.06-1.54.hdf5', 270: f'{w_dir}270.04-2.02.hdf5'}
+
+    ensemble_model = create_ensemble_model(RESNET50, w_paths)
+    accuracies = topk_accuracy(ensemble_model, [1, 3, 5])
+    print_accuracy(accuracies, 'RESNET50 ensemble')
