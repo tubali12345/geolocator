@@ -2,6 +2,7 @@ from tensorflow import keras
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
+from utils import Config
 
 
 def preprocess_data_sep_by_heading():
@@ -20,31 +21,30 @@ def preprocess_data_sep_by_heading():
 
 
 class Data:
-    PATH = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
-
-    def __init__(self, validation_split: float, image_size: tuple[int, int], batch_size: int, seed: int):
+    def __init__(self, validation_split: float, image_size: tuple[int, int], batch_size: int, seed: int, label_mode: str):
         self.val_split = validation_split
         self.image_size = image_size
         self.batch_size = batch_size
         self.seed = seed
+        self.label_mode = label_mode
 
-    def load_train(self, name: str, path=PATH):
+    def load_train(self, name: str, path=Config.PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,
             subset="training",
             seed=self.seed,
-            label_mode='categorical',
+            label_mode=self.label_mode,
             image_size=self.image_size,
             batch_size=self.batch_size)
 
-    def load_val(self, name: str, path=PATH):
+    def load_val(self, name: str, path=Config.PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,
             subset="validation",
             seed=self.seed,
-            label_mode='categorical',
+            label_mode=self.label_mode,
             image_size=self.image_size,
             batch_size=self.batch_size)
 
@@ -53,11 +53,10 @@ class Data:
         x_test, y_test = [], []
         test_ds = keras.preprocessing.image_dataset_from_directory(
             f'{p}test_data',
-            label_mode='categorical',
+            label_mode=self.label_mode,
             image_size=self.image_size,
             validation_split=self.val_split,
             seed=self.seed,
-            shuffle=True,
             subset='validation',
             batch_size=self.batch_size)
         for images, labels in tqdm(test_ds.unbatch()):
