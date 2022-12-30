@@ -5,22 +5,9 @@ import numpy as np
 from utils import Config
 
 
-def preprocess_data_sep_by_heading():
-    path = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/geolocator'
-    headings = [0, 90, 180, 270]
-    data = Path(f'{path}/data')
-
-    for heading in headings:
-        outdir = Path(f'{path}/pictures_{str(heading)}')
-        outdir.mkdir(exist_ok=True, parents=True)
-        for directory in tqdm(data.glob("*")):
-            outdir2 = Path(f'pictures_{str(heading)}/{directory.name}')
-            outdir2.mkdir(exist_ok=True, parents=True)
-            for file in directory.glob(f"*_{str(heading)}.jpg"):
-                file.rename(outdir2 / file.name)
-
-
 class Data:
+    states = {i: state.name for i, state in enumerate(Path(f'{Config.PATH}data').glob('*/'))}
+
     def __init__(self, validation_split: float, image_size: tuple[int, int], batch_size: int, seed: int, label_mode: str):
         self.val_split = validation_split
         self.image_size = image_size
@@ -63,3 +50,18 @@ class Data:
             x_test.append(images.numpy())
             y_test.append(labels.numpy())
         return np.array(x_test), np.array(y_test)
+
+
+def preprocess_data_sep_by_heading():
+    path = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/geolocator'
+    headings = [0, 90, 180, 270]
+    data = Path(f'{path}/data')
+
+    for heading in headings:
+        outdir = Path(f'{path}/pictures_{str(heading)}')
+        outdir.mkdir(exist_ok=True, parents=True)
+        for directory in tqdm(data.glob("*")):
+            outdir2 = Path(f'pictures_{str(heading)}/{directory.name}')
+            outdir2.mkdir(exist_ok=True, parents=True)
+            for file in directory.glob(f"*_{str(heading)}.jpg"):
+                file.rename(outdir2 / file.name)

@@ -2,7 +2,7 @@ class Config:
     PATH = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
 
 
-class TrainParameters:
+class Parameters:
     num_classes = 50
     num_epochs = 50
     learning_rate = 1e-4
@@ -24,4 +24,3 @@ class TrainParameters:
     ]
     transformer_layers = 8
     mlp_head_units = [2048, 1024]
-

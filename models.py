@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 from keras.layers import Dense, Flatten, Average
 from keras import layers
-from utils import TrainParameters
+from utils import Parameters
 
 
 class Patches(layers.Layer):
@@ -49,7 +49,7 @@ def ViT(input_shape: tuple[int, int, int], x_train):
     data_augmentation = keras.Sequential(
         [
             layers.Normalization(),
-            layers.Resizing(TrainParameters.image_size, TrainParameters.image_size),
+            layers.Resizing(Parameters.image_size, Parameters.image_size),
             layers.RandomFlip("horizontal"),
             layers.RandomRotation(factor=0.02),
             layers.RandomZoom(
@@ -62,23 +62,23 @@ def ViT(input_shape: tuple[int, int, int], x_train):
     data_augmentation.layers[0].adapt(x_train)
     inputs = layers.Input(shape=input_shape)
     augmented = data_augmentation(inputs)
-    patches = Patches(TrainParameters.patch_size)(augmented)
-    encoded_patches = PatchEncoder(TrainParameters.num_patches, TrainParameters.projection_dim)(patches)
-    for _ in range(TrainParameters.transformer_layers):
+    patches = Patches(Parameters.patch_size)(augmented)
+    encoded_patches = PatchEncoder(Parameters.num_patches, Parameters.projection_dim)(patches)
+    for _ in range(Parameters.transformer_layers):
         x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
         attention_output = layers.MultiHeadAttention(
-            num_heads=TrainParameters.num_heads, key_dim=TrainParameters.projection_dim, dropout=0.1
+            num_heads=Parameters.num_heads, key_dim=Parameters.projection_dim, dropout=0.1
         )(x1, x1)
         x2 = layers.Add()([attention_output, encoded_patches])
         x3 = layers.LayerNormalization(epsilon=1e-6)(x2)
-        x3 = mlp(x3, hidden_units=TrainParameters.transformer_units, dropout_rate=0.1)
+        x3 = mlp(x3, hidden_units=Parameters.transformer_units, dropout_rate=0.1)
         encoded_patches = layers.Add()([x3, x2])
 
     representation = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     representation = layers.Flatten()(representation)
     representation = layers.Dropout(0.5)(representation)
-    features = mlp(representation, hidden_units=TrainParameters.mlp_head_units, dropout_rate=0.5)
-    logits = layers.Dense(TrainParameters.num_classes)(features)
+    features = mlp(representation, hidden_units=Parameters.mlp_head_units, dropout_rate=0.5)
+    logits = layers.Dense(Parameters.num_classes)(features)
     return keras.Model(inputs=inputs, outputs=logits)
 
 
@@ -86,10 +86,10 @@ def RESNET50(input_shape: tuple[int, int, int]):
     model = keras.Sequential()
     resnet50_model = keras.applications.ResNet50(include_top=False,
                                                  input_shape=input_shape,
-                                                 pooling='avg', classes=TrainParameters.num_classes)
+                                                 pooling='avg', classes=Parameters.num_classes)
     model.add(resnet50_model)
     model.add(Flatten())
-    model.add(Dense(TrainParameters.num_classes, activation='softmax'))
+    model.add(Dense(Parameters.num_classes, activation='softmax'))
     model.summary()
     return model
 
@@ -98,10 +98,10 @@ def RESNET101(input_shape: tuple[int, int, int]):
     model = keras.Sequential()
 
     resnet101_model = keras.applications.ResNet101(include_top=False, input_shape=input_shape,
-                                                   pooling='avg', classes=TrainParameters.num_classes)
+                                                   pooling='avg', classes=Parameters.num_classes)
     model.add(resnet101_model)
     model.add(Flatten())
-    model.add(Dense(TrainParameters.num_classes, activation='softmax'))
+    model.add(Dense(Parameters.num_classes, activation='softmax'))
     model.summary()
     return model
 

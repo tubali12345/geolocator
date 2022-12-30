@@ -4,9 +4,10 @@ from tqdm import tqdm
 import numpy as np
 from models import Patches
 import matplotlib.pyplot as plt
+from utils import Config
 
 
-path = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
+path = Config.PATH
 data = Data(validation_split=0.999, image_size=(256, 256), batch_size=8, seed=123, label_mode='int')
 ds = data.load_train('data')
 val_data = data.load_val('data')
@@ -16,6 +17,7 @@ for images, labels in tqdm(ds.unbatch()):
     x_train.append(images.numpy())
     y_train.append(labels.numpy())
 
+x_train, y_train = np.array(x_train), np.array(y_train)
 
 
 image_size = 256
@@ -44,3 +46,4 @@ for i, patch in enumerate(patches[0]):
     patch_img = tf.reshape(patch, (patch_size, patch_size, 3))
     plt.imshow(patch_img.numpy().astype("uint8"))
     plt.axis("off")
+plt.show()
