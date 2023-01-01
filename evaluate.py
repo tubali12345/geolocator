@@ -63,7 +63,7 @@ if __name__ == '__main__':
     #
     # predictions_r50 = predict(resnet50_model, x_test)
     # print_accuracy(accuracy_by_state(predictions_r50, y_test), 'RESNET50 model', acc_by_state=True, write_to_file=True)
-    # print_accuracy(topk_accuracy(predictions_r50, y_test, [1, 3, 5]), 'RESNET50 model')
+    # print_accuracy(topk_accuracy(predictions_r50, y_test, [1, 2, 3, 5]), 'RESNET50 model')
 
     ''' RESNET 50 ENSEMBLE model'''
 
@@ -76,4 +76,4 @@ if __name__ == '__main__':
 
     predictions_r50e = predict(ensemble_model, x_test)
     print_accuracy(accuracy_by_state(predictions_r50e, y_test), 'RESNET50 ensemble model', acc_by_state=True, write_to_file=True)
-    print_accuracy(topk_accuracy(predictions_r50e, y_test, [1, 3, 5]), 'RESNET50 ensemble model')
+    print_accuracy(topk_accuracy(predictions_r50e, y_test, [1, 2, 3, 5]), 'RESNET50 ensemble model')

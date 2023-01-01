@@ -106,8 +106,8 @@ def RESNET101(input_shape: tuple[int, int, int]):
     return model
 
 
-def ensemble_model(model, input_shape: tuple[int, int, int], weight_paths: dict):
-    def_models = {heading: model(input_shape) for heading in [0, 90, 180, 270]}
+def ensemble_model(create_model, input_shape: tuple[int, int, int], weight_paths: dict):
+    def_models = {heading: create_model(input_shape) for heading in [0, 90, 180, 270]}
     for heading in def_models:
         def_models[heading].load_weights(weight_paths[heading])
     models = list(def_models.values())
@@ -115,3 +115,16 @@ def ensemble_model(model, input_shape: tuple[int, int, int], weight_paths: dict)
     model_outputs = [model(model_input) for model in models]
     ensemble_output = Average()(model_outputs)
     return keras.Model(inputs=model_input, outputs=ensemble_output, name='ensemble')
+
+
+def new_ensemble_model(create_model, input_shape: tuple[int, int, int], weight_paths: dict):
+    def_models = {heading: create_model(input_shape) for heading in [0, 90, 180, 270]}
+    for heading in def_models:
+        def_models[heading].load_weights(weight_paths[heading])
+    models = list(def_models.values())
+    model_input = keras.Input(shape=input_shape)
+    model_outputs = [model(model_input) for model in models]
+    merged = keras.layers.Concatenate(axis=1)(model_outputs)
+    perceptron = Dense(1, activation='relu', input_dim=4)(merged)
+    output = Dense(50, activation='softmax')(perceptron)
+    return keras.Model(inputs=model_input, outputs=output, name='ensemble')

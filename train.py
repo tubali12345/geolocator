@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import date
 from data import Data
 import tensorflow as tf
-from models import RESNET50, RESNET101, ViT
+from models import RESNET50, RESNET101, ViT, new_ensemble_model
 from utils import Config, Parameters
 import numpy as np
 
@@ -73,9 +73,24 @@ def train_ViT(model_name: str, num_epochs: int = Parameters.num_epochs):
     return model.fit(x=x_train, y=y_train, epochs=num_epochs, validation_split=0.15, callbacks=callbacks(model_name))
 
 
+def train_ensemble_perceptron(model_name: str, num_epochs: int = Parameters.num_epochs):
+    data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
+    input_shape = data.image_size + (3,)
+
+    w_dir = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/'
+    w_paths = {0: f'{w_dir}resnet50 ensemble_2022-12-29/0.09-1.16.hdf5',
+               90: f'{w_dir}resnet50 ensemble_2022-12-30/90.09-1.18.hdf5',
+               180: f'{w_dir}resnet50 ensemble_2022-12-30/180.09-1.17.hdf5',
+               270: f'{w_dir}resnet50 ensemble_2022-12-31/270.09-1.22.hdf5'}
+    e_model = new_ensemble_model(RESNET50, input_shape, w_paths)
+    compile_SGD(e_model)
+    return train(e_model, data.load_train('pictures_0'), data.load_val('pictures_0'), num_epochs=num_epochs, model_name=model_name)
+
+
 if __name__ == '__main__':
+    train_ensemble_perceptron('new_ensemble')
     # train_ViT('ViT')
     # train_single(RESNET50, '1RESNET50')
-    train_ensemble(RESNET50, 'resnet50 ensemble')
+    # train_ensemble(RESNET50, 'resnet50 ensemble')
     # train_single(RESNET101, 'resnet101')
     # train_ensemble(RESNET101, 'resnet101 ensemble')
