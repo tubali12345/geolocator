@@ -57,21 +57,23 @@ if __name__ == '__main__':
 
     ''' RESNET 50 model'''
 
-    w_dir0 = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/1RESNET50_2022-12-28/'
-    resnet50_model = RESNET50(input_shape)
-    resnet50_model.load_weights(f'{w_dir0}.07-1.03.hdf5')
-
-    predictions_r50 = predict(resnet50_model, x_test)
-    print_accuracy(accuracy_by_state(predictions_r50, y_test), 'RESNET50 model', acc_by_state=True, write_to_file=True)
-    print_accuracy(topk_accuracy(predictions_r50, y_test, [1, 3, 5]), 'RESNET50 model')
+    # w_dir0 = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/1RESNET50_2022-12-28/'
+    # resnet50_model = RESNET50(input_shape)
+    # resnet50_model.load_weights(f'{w_dir0}.07-1.03.hdf5')
+    #
+    # predictions_r50 = predict(resnet50_model, x_test)
+    # print_accuracy(accuracy_by_state(predictions_r50, y_test), 'RESNET50 model', acc_by_state=True, write_to_file=True)
+    # print_accuracy(topk_accuracy(predictions_r50, y_test, [1, 3, 5]), 'RESNET50 model')
 
     ''' RESNET 50 ENSEMBLE model'''
 
-    # w_dir = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/only_resnet50/'
-    # w_paths = {0: f'{w_dir}0.06-1.48.hdf5', 90: f'{w_dir}90.06-1.54.hdf5', 180: f'{w_dir}180.06-1.54.hdf5',
-    #            270: 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/resnet50_2022-12-27/270.06-1.51.hdf5'}
-    #
-    # ensemble_model = ensemble_model(RESNET50, input_shape, w_paths)
-    # predictions = predict(ensemble_model, x_test)
-    # accuracies = topk_accuracy(predictions, y_test, [1, 3, 5])
-    # print_accuracy(accuracies, 'RESNET50 ensemble model')
+    w_dir = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/'
+    w_paths = {0: f'{w_dir}resnet50 ensemble_2022-12-29/0.09-1.16.hdf5',
+               90: f'{w_dir}resnet50 ensemble_2022-12-30/90.09-1.18.hdf5',
+               180: f'{w_dir}resnet50 ensemble_2022-12-30/180.09-1.17.hdf5',
+               270: f'{w_dir}resnet50 ensemble_2022-12-31/270.09-1.22.hdf5'}
+    ensemble_model = ensemble_model(RESNET50, input_shape, w_paths)
+
+    predictions_r50e = predict(ensemble_model, x_test)
+    print_accuracy(accuracy_by_state(predictions_r50e, y_test), 'RESNET50 ensemble model', acc_by_state=True, write_to_file=True)
+    print_accuracy(topk_accuracy(predictions_r50e, y_test, [1, 3, 5]), 'RESNET50 ensemble model')
