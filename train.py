@@ -42,11 +42,10 @@ def train_ensemble(create_model_func, model_name: str, num_epochs: int = Paramet
     histories = {}
 
     for heading, model in models.items():
-        if heading in [180, 270]:
-            compile_SGD(model)
-            train_data = data.load_train(f'pictures_{heading}')
-            val_data = data.load_val(f'pictures_{heading}')
-            histories[heading] = train(model, train_data, val_data, num_epochs, model_name, heading)
+        compile_SGD(model)
+        train_data = data.load_train(f'pictures_{heading}')
+        val_data = data.load_val(f'pictures_{heading}')
+        histories[heading] = train(model, train_data, val_data, num_epochs, model_name, heading)
     return histories
 
 

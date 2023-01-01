@@ -9,7 +9,7 @@ class Parameters:
     min_lr = 0
     reduce_lr_factor = 0.2
     reduce_lr_patience = 1
-    early_stop_patience = 5
+    early_stop_patience = 3
     momentum = 0.9
     verbose = 0
     weight_decay = 0.1
