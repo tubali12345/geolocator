@@ -32,7 +32,8 @@ def callbacks(model_name: str,
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=Parameters.verbose, save_weights_only=True,
                                  save_best_only=True, mode='auto')
     tensor_board = TensorBoard(log_dir=logdir)
-    early_stop = EarlyStopping(monitor='val_accuracy', patience=Parameters.early_stop_patience, verbose=Parameters.verbose)
+    early_stop = EarlyStopping(monitor='val_accuracy', patience=Parameters.early_stop_patience,
+                               verbose=Parameters.verbose)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=Parameters.reduce_lr_factor,
                                   patience=Parameters.reduce_lr_patience, min_lr=Parameters.min_lr)
     return [checkpoint, tensor_board, early_stop, reduce_lr]
@@ -50,7 +51,7 @@ def train(model,
           num_epochs: int,
           model_name: str,
           heading=None):
-    return model.fit(train_data,  validation_data=val_data, epochs=num_epochs, callbacks=callbacks(model_name, heading))
+    return model.fit(train_data, validation_data=val_data, epochs=num_epochs, callbacks=callbacks(model_name, heading))
 
 
 def train_ensemble(create_model_func,
@@ -88,7 +89,7 @@ def train_single(create_model_func,
 
 def train_ViT(model_name: str,
               num_epochs: int = Parameters.num_epochs):
-    data = Data(validation_split=0, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
+    data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
     ds = data.load_train('data')
     x_train, y_train = [], []
@@ -105,8 +106,8 @@ def train_ViT(model_name: str,
 
 
 def train_boosted_ensemble(create_mode_func,
-                              model_name: str,
-                              num_epochs: int = Parameters.num_epochs):
+                           model_name: str,
+                           num_epochs: int = Parameters.num_epochs):
     data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
 
@@ -126,4 +127,3 @@ if __name__ == '__main__':
     train_single(RESNET50, '1RESNET50_panorama', is_panorama=True)
     # train_ensemble(RESNET50, 'resnet50 ensemble')
     # train_boosted_ensemble(RESNET50, 'boosted_ensemble')
-
