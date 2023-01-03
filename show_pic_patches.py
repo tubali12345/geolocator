@@ -8,7 +8,7 @@ from utils import Config
 
 
 path = Config.PATH
-data = Data(validation_split=0.999, image_size=(256, 256), batch_size=8, seed=123, label_mode='int')
+data = Data(validation_split=0.9999, image_size=(256, 256), batch_size=8, seed=123, label_mode='int')
 ds = data.load_train('data')
 val_data = data.load_val('data')
 x_train, y_train = [], []

@@ -1,5 +1,6 @@
 class Config:
     PATH = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
+    WEIGHTS_PATH = f'{PATH}weights/'
 
 
 class Parameters:

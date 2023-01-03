@@ -8,14 +8,22 @@ from utils import Config
 class Data:
     states = {i: state.name for i, state in enumerate(Path(f'{Config.PATH}data').glob('*/'))}
 
-    def __init__(self, validation_split: float, image_size: tuple[int, int], batch_size: int, seed: int, label_mode: str):
+    def __init__(self,
+                 validation_split: float,
+                 image_size: tuple,
+                 batch_size: int,
+                 seed: int,
+                 label_mode: str):
+
         self.val_split = validation_split
         self.image_size = image_size
         self.batch_size = batch_size
         self.seed = seed
         self.label_mode = label_mode
 
-    def load_train(self, name: str, path=Config.PATH):
+    def load_train(self,
+                   name: str,
+                   path: str = Config.PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,
@@ -25,7 +33,9 @@ class Data:
             image_size=self.image_size,
             batch_size=self.batch_size)
 
-    def load_val(self, name: str, path=Config.PATH):
+    def load_val(self,
+                 name: str,
+                 path: str = Config.PATH):
         return keras.preprocessing.image_dataset_from_directory(
             f'{path}{name}',
             validation_split=self.val_split,
@@ -35,7 +45,7 @@ class Data:
             image_size=self.image_size,
             batch_size=self.batch_size)
 
-    def load_test(self) -> tuple[np.array, np.array]:
+    def load_test(self) -> tuple:
         p = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
         x_test, y_test = [], []
         test_ds = keras.preprocessing.image_dataset_from_directory(
@@ -46,9 +56,11 @@ class Data:
             seed=self.seed,
             subset='validation',
             batch_size=self.batch_size)
+
         for images, labels in tqdm(test_ds.unbatch()):
             x_test.append(images.numpy())
             y_test.append(labels.numpy())
+
         return np.array(x_test), np.array(y_test)
 
 

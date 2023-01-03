@@ -1,7 +1,9 @@
 import tensorflow as tf
-from tensorflow import keras
-from keras.layers import Dense, Flatten, Average
 from keras import layers
+from keras.layers import Dense, Flatten, Average
+from tensorflow import keras
+import numpy as np
+
 from utils import Parameters
 
 
@@ -45,7 +47,8 @@ def mlp(x, hidden_units, dropout_rate):
     return x
 
 
-def ViT(input_shape: tuple[int, int, int], x_train):
+def ViT(input_shape: tuple,
+        x_train: np.array):
     data_augmentation = keras.Sequential(
         [
             layers.Normalization(),
@@ -58,12 +61,13 @@ def ViT(input_shape: tuple[int, int, int], x_train):
         ],
         name="data_augmentation",
     )
-    # Compute the mean and the variance of the training data for normalization.
+
     data_augmentation.layers[0].adapt(x_train)
     inputs = layers.Input(shape=input_shape)
     augmented = data_augmentation(inputs)
     patches = Patches(Parameters.patch_size)(augmented)
     encoded_patches = PatchEncoder(Parameters.num_patches, Parameters.projection_dim)(patches)
+
     for _ in range(Parameters.transformer_layers):
         x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
         attention_output = layers.MultiHeadAttention(
@@ -82,7 +86,7 @@ def ViT(input_shape: tuple[int, int, int], x_train):
     return keras.Model(inputs=inputs, outputs=logits)
 
 
-def RESNET50(input_shape: tuple[int, int, int]):
+def RESNET50(input_shape: tuple):
     model = keras.Sequential()
     resnet50_model = keras.applications.ResNet50(include_top=False,
                                                  input_shape=input_shape,
@@ -94,7 +98,7 @@ def RESNET50(input_shape: tuple[int, int, int]):
     return model
 
 
-def RESNET101(input_shape: tuple[int, int, int]):
+def RESNET101(input_shape: tuple):
     model = keras.Sequential()
 
     resnet101_model = keras.applications.ResNet101(include_top=False, input_shape=input_shape,
@@ -106,22 +110,32 @@ def RESNET101(input_shape: tuple[int, int, int]):
     return model
 
 
-def ensemble_model(create_model, input_shape: tuple[int, int, int], weight_paths: dict):
+def ensemble_model(create_model,
+                   input_shape: tuple,
+                   weight_paths: dict):
     def_models = {heading: create_model(input_shape) for heading in [0, 90, 180, 270]}
+
     for heading in def_models:
         def_models[heading].load_weights(weight_paths[heading])
+
     models = list(def_models.values())
+
     model_input = keras.Input(shape=input_shape)
     model_outputs = [model(model_input) for model in models]
     ensemble_output = Average()(model_outputs)
     return keras.Model(inputs=model_input, outputs=ensemble_output, name='ensemble')
 
 
-def new_ensemble_model(create_model, input_shape: tuple[int, int, int], weight_paths: dict):
+def ensemble_model_perceptron(create_model,
+                              input_shape: tuple,
+                              weight_paths: dict):
     def_models = {heading: create_model(input_shape) for heading in [0, 90, 180, 270]}
+
     for heading in def_models:
         def_models[heading].load_weights(weight_paths[heading])
+
     models = list(def_models.values())
+
     model_input = keras.Input(shape=input_shape)
     model_outputs = [model(model_input) for model in models]
     merged = keras.layers.Concatenate(axis=1)(model_outputs)

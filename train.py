@@ -1,22 +1,25 @@
+from datetime import date
+from pathlib import Path
+
+import numpy as np
+import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import SGD
-from pathlib import Path
-from datetime import date
+
 from data import Data
-import tensorflow as tf
-from models import RESNET50, RESNET101, ViT, new_ensemble_model
+from models import RESNET50, ViT, ensemble_model_perceptron
 from utils import Config, Parameters
-import numpy as np
 
 
-def callbacks(model_name: str, heading: int = None) -> list:
-    weights_dir = Path(f'{Config.PATH}weights/{model_name}_{date.today()}')
+def callbacks(model_name: str,
+              heading: int = None) -> list:
+    weights_dir = Path(f'{Config.WEIGHTS_PATH}{model_name}_{date.today()}')
     weights_dir.mkdir(exist_ok=True, parents=True)
     if heading is not None:
-        filepath = f'{Config.PATH}weights/{model_name}_{date.today()}/{heading}' + '.{epoch:02d}-{loss:.2f}.hdf5'
+        filepath = f'{Config.WEIGHTS_PATH}{model_name}_{date.today()}/{heading}' + '.{epoch:02d}-{loss:.2f}.hdf5'
         logdir = f'{Config.PATH}logs/{model_name}_{heading}_{date.today()}'
     else:
-        filepath = f'{Config.PATH}weights/{model_name}_{date.today()}/' + '.{epoch:02d}-{loss:.2f}.hdf5'
+        filepath = f'{Config.WEIGHTS_PATH}{model_name}_{date.today()}/' + '.{epoch:02d}-{loss:.2f}.hdf5'
         logdir = f'{Config.PATH}logs/{model_name}_{date.today()}'
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=Parameters.verbose, save_weights_only=True,
                                  save_best_only=True, mode='auto')
@@ -27,15 +30,24 @@ def callbacks(model_name: str, heading: int = None) -> list:
     return [checkpoint, tensor_board, early_stop, reduce_lr]
 
 
-def compile_SGD(model, lr: float = Parameters.learning_rate, momentum: float = Parameters.momentum):
+def compile_SGD(model,
+                lr: float = Parameters.learning_rate,
+                momentum: float = Parameters.momentum):
     return model.compile(optimizer=SGD(learning_rate=lr, momentum=momentum), loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-def train(model, train_data: tf.data.Dataset, val_data: tf.data.Dataset, num_epochs: int, model_name: str, heading=None):
+def train(model,
+          train_data: tf.data.Dataset,
+          val_data: tf.data.Dataset,
+          num_epochs: int,
+          model_name: str,
+          heading=None):
     return model.fit(train_data,  validation_data=val_data, epochs=num_epochs, callbacks=callbacks(model_name, heading))
 
 
-def train_ensemble(create_model_func, model_name: str, num_epochs: int = Parameters.num_epochs) -> dict:
+def train_ensemble(create_model_func,
+                   model_name: str,
+                   num_epochs: int = Parameters.num_epochs) -> dict:
     data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
     models = {heading: create_model_func(input_shape) for heading in [0, 90, 180, 270]}
@@ -49,7 +61,9 @@ def train_ensemble(create_model_func, model_name: str, num_epochs: int = Paramet
     return histories
 
 
-def train_single(create_model_func, model_name: str, num_epochs: int = Parameters.num_epochs):
+def train_single(create_model_func,
+                 model_name: str,
+                 num_epochs: int = Parameters.num_epochs):
     data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
     model = create_model_func(input_shape)
@@ -59,7 +73,8 @@ def train_single(create_model_func, model_name: str, num_epochs: int = Parameter
     return train(model, train_data, val_data, num_epochs=num_epochs, model_name=model_name)
 
 
-def train_ViT(model_name: str, num_epochs: int = Parameters.num_epochs):
+def train_ViT(model_name: str,
+              num_epochs: int = Parameters.num_epochs):
     data = Data(validation_split=0, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
     ds = data.load_train('data')
@@ -73,18 +88,19 @@ def train_ViT(model_name: str, num_epochs: int = Parameters.num_epochs):
     return model.fit(x=x_train, y=y_train, epochs=num_epochs, validation_split=0.15, callbacks=callbacks(model_name))
 
 
-def train_ensemble_perceptron(model_name: str, num_epochs: int = Parameters.num_epochs):
+def train_ensemble_perceptron(model_name: str,
+                              num_epochs: int = Parameters.num_epochs):
     data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
 
-    w_dir = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/weights/'
+    w_dir = Config.WEIGHTS_PATH
     w_paths = {0: f'{w_dir}resnet50 ensemble_2022-12-29/0.09-1.16.hdf5',
                90: f'{w_dir}resnet50 ensemble_2022-12-30/90.09-1.18.hdf5',
                180: f'{w_dir}resnet50 ensemble_2022-12-30/180.09-1.17.hdf5',
                270: f'{w_dir}resnet50 ensemble_2022-12-31/270.09-1.22.hdf5'}
-    e_model = new_ensemble_model(RESNET50, input_shape, w_paths)
+    e_model = ensemble_model_perceptron(RESNET50, input_shape, w_paths)
     compile_SGD(e_model)
-    return train(e_model, data.load_train('pictures_0'), data.load_val('pictures_0'), num_epochs=num_epochs, model_name=model_name)
+    return train(e_model, data.load_train('e_data'), data.load_val('e_data'), num_epochs=num_epochs, model_name=model_name)
 
 
 if __name__ == '__main__':
@@ -92,5 +108,4 @@ if __name__ == '__main__':
     # train_ViT('ViT')
     # train_single(RESNET50, '1RESNET50')
     # train_ensemble(RESNET50, 'resnet50 ensemble')
-    # train_single(RESNET101, 'resnet101')
-    # train_ensemble(RESNET101, 'resnet101 ensemble')
+
