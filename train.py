@@ -11,16 +11,24 @@ from models import RESNET50, ViT, ensemble_model_perceptron
 from utils import Config, Parameters
 
 
-def callbacks(model_name: str,
-              heading: int = None) -> list:
+def define_paths(model_name: str,
+                 heading: int = None) -> tuple:
     weights_dir = Path(f'{Config.WEIGHTS_PATH}{model_name}_{date.today()}')
     weights_dir.mkdir(exist_ok=True, parents=True)
+
     if heading is not None:
         filepath = f'{Config.WEIGHTS_PATH}{model_name}_{date.today()}/{heading}' + '.{epoch:02d}-{loss:.2f}.hdf5'
         logdir = f'{Config.PATH}logs/{model_name}_{heading}_{date.today()}'
     else:
         filepath = f'{Config.WEIGHTS_PATH}{model_name}_{date.today()}/' + '.{epoch:02d}-{loss:.2f}.hdf5'
         logdir = f'{Config.PATH}logs/{model_name}_{date.today()}'
+
+    return filepath, logdir
+
+
+def callbacks(model_name: str,
+              heading: int = None) -> list:
+    filepath, logdir = define_paths(model_name, heading)
     checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=Parameters.verbose, save_weights_only=True,
                                  save_best_only=True, mode='auto')
     tensor_board = TensorBoard(log_dir=logdir)
