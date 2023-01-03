@@ -128,7 +128,7 @@ def ensemble_model(create_model,
 
 def ensemble_model_perceptron(create_model,
                               input_shape: tuple,
-                              weight_paths: dict):
+                              weight_paths: dict):  # Does not work the way I wanted
     def_models = {heading: create_model(input_shape) for heading in [0, 90, 180, 270]}
 
     for heading in def_models:
