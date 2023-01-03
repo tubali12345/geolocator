@@ -9,11 +9,11 @@ class Data:
     states = {i: state.name for i, state in enumerate(Path(f'{Config.PATH}data').glob('*/'))}
 
     def __init__(self,
-                 validation_split: float,
-                 image_size: tuple,
-                 batch_size: int,
-                 seed: int,
-                 label_mode: str):
+                 validation_split: float = 0.15,
+                 image_size: tuple = (256, 256),
+                 batch_size: int = 32,
+                 seed: int = 123,
+                 label_mode: str = 'categorical'):
 
         self.val_split = validation_split
         self.image_size = image_size
@@ -45,16 +45,13 @@ class Data:
             image_size=self.image_size,
             batch_size=self.batch_size)
 
-    def load_test(self) -> tuple:
-        p = 'C:/Users/TuriB/Documents/5.felev/bevadat/geo_project/'
+    def load_test(self,
+                  path: str = Config.PATH) -> tuple:
         x_test, y_test = [], []
         test_ds = keras.preprocessing.image_dataset_from_directory(
-            f'{p}test_data',
+            f'{path}test_data',
             label_mode=self.label_mode,
             image_size=self.image_size,
-            validation_split=self.val_split,
-            seed=self.seed,
-            subset='validation',
             batch_size=self.batch_size)
 
         for images, labels in tqdm(test_ds.unbatch()):

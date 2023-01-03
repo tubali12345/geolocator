@@ -126,9 +126,9 @@ def ensemble_model(create_model,
     return keras.Model(inputs=model_input, outputs=ensemble_output, name='ensemble')
 
 
-def ensemble_model_perceptron(create_model,
-                              input_shape: tuple,
-                              weight_paths: dict):  # Does not work the way I wanted
+def boosted_ensemble_model(create_model,
+                           input_shape: tuple,
+                           weight_paths: dict):
     def_models = {heading: create_model(input_shape) for heading in [0, 90, 180, 270]}
 
     for heading in def_models:
@@ -139,6 +139,6 @@ def ensemble_model_perceptron(create_model,
     model_input = keras.Input(shape=input_shape)
     model_outputs = [model(model_input) for model in models]
     merged = keras.layers.Concatenate(axis=1)(model_outputs)
-    perceptron = Dense(1, activation='relu', input_dim=4)(merged)
+    perceptron = Dense(1000, activation='relu', input_dim=4)(merged)
     output = Dense(50, activation='softmax')(perceptron)
     return keras.Model(inputs=model_input, outputs=output, name='ensemble')

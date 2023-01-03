@@ -7,7 +7,7 @@ from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping, ReduceL
 from keras.optimizers import SGD
 
 from data import Data
-from models import RESNET50, ViT, ensemble_model_perceptron
+from models import RESNET50, ViT, boosted_ensemble_model
 from utils import Config, Parameters
 
 
@@ -72,14 +72,16 @@ def train_ensemble(create_model_func,
 
 def train_single(create_model_func,
                  model_name: str,
-                 num_epochs: int = Parameters.num_epochs):
-    data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
+                 num_epochs: int = Parameters.num_epochs,
+                 is_panorama: bool = False):
+    img_size = (1024, 256) if is_panorama else (256, 256)
+    data = Data(validation_split=0.15, image_size=img_size, batch_size=8, seed=123, label_mode='categorical')
     input_shape = data.image_size + (3,)
 
     model = create_model_func(input_shape)
     compile_SGD(model)
-    train_data = data.load_train('data')
-    val_data = data.load_val('data')
+    train_data = data.load_train('data_panorama')
+    val_data = data.load_val('data_panorama')
 
     return train(model, train_data, val_data, num_epochs=num_epochs, model_name=model_name)
 
@@ -102,7 +104,7 @@ def train_ViT(model_name: str,
     return model.fit(x=x_train, y=y_train, epochs=num_epochs, validation_split=0.15, callbacks=callbacks(model_name))
 
 
-def train_ensemble_perceptron(create_mode_func,
+def train_boosted_ensemble(create_mode_func,
                               model_name: str,
                               num_epochs: int = Parameters.num_epochs):
     data = Data(validation_split=0.15, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
@@ -113,14 +115,15 @@ def train_ensemble_perceptron(create_mode_func,
                90: f'{w_dir}resnet50 ensemble_2022-12-30/90.09-1.18.hdf5',
                180: f'{w_dir}resnet50 ensemble_2022-12-30/180.09-1.17.hdf5',
                270: f'{w_dir}resnet50 ensemble_2022-12-31/270.09-1.22.hdf5'}
-    e_model = ensemble_model_perceptron(create_mode_func, input_shape, w_paths)
+    e_model = boosted_ensemble_model(create_mode_func, input_shape, w_paths)
     compile_SGD(e_model)
     return train(e_model, data.load_train('e_data'), data.load_val('e_data'), num_epochs=num_epochs, model_name=model_name)
 
 
 if __name__ == '__main__':
-    # train_ensemble_perceptron(RESNET50, 'new_ensemble')
     # train_ViT('ViT')
-    train_single(RESNET50, '1RESNET50')
+    # train_single(RESNET50, '1RESNET50')
+    train_single(RESNET50, '1RESNET50_panorama', is_panorama=True)
     # train_ensemble(RESNET50, 'resnet50 ensemble')
+    # train_boosted_ensemble(RESNET50, 'boosted_ensemble')
 

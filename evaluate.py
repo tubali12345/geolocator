@@ -50,7 +50,7 @@ def print_accuracy(accuracies: dict,
 
 
 if __name__ == '__main__':
-    data = Data(validation_split=0.07, image_size=(256, 256), batch_size=8, seed=123, label_mode='categorical')
+    data = Data(image_size=(256, 256), batch_size=8, label_mode='categorical')
     input_shape = data.image_size + (3,)
     x_test, y_test = data.load_test()
     w_dir = Config.WEIGHTS_PATH
